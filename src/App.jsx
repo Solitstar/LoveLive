@@ -1,0 +1,614 @@
+import { useState, useMemo, useEffect, useCallback, useDeferredValue } from 'react';
+import { renderShareImageToCanvas, downloadCanvasAsPng } from './utils/exportImage';
+import { useCollection } from './hooks/useCollection';
+import { useVersionCheck } from './hooks/useVersionCheck';
+import { useFolders } from './hooks/useFolders';
+import { getCharactersBySeries, ALL_CHARACTERS, SERIES_LIST, isCharacterless, countRealCharacters, OTHER_SERIES_CHARACTERS, getCharacterGroupByName, matchCharacterGroup } from './data/characters';
+import { splitTypes, TYPES } from './data/items';
+import Header from './components/Header';
+import StatsBar from './components/StatsBar';
+import FilterBar from './components/FilterBar';
+import CardGrid from './components/CardGrid';
+import ItemModal from './components/ItemModal';
+import SearchBar from './components/SearchBar';
+import CollectionProgress from './components/CollectionProgress';
+import FolderBar from './components/FolderBar';
+
+// 标准化：去掉括号、书名号、空格等符号，用于模糊匹配
+const normalize = (s) => String(s || '').replace(/[\(\)（）\（\）\[\]【】〈〉《》\s\-·\.]+/g, '').toLowerCase();
+
+// 角色名表（按长度降序，优先匹配长名字避免子串误判）
+const NORMALIZED_CHARS = ALL_CHARACTERS.map(normalize).filter(Boolean).sort((a, b) => b.length - a.length);
+
+// 种类名表（排除"全部"，按长度降序）
+const NORMALIZED_TYPES = TYPES.filter(t => t !== '全部').map(normalize).filter(Boolean).sort((a, b) => b.length - a.length);
+
+// 从搜索词中提取角色名和种类名（支持无空格连续输入，如"格言贴纸"、"星宫莓亚克力挂件"），
+// 返回 { chars: 角色名列表, types: 种类名列表, rest: 剩余关键词 }
+const extractSearchParts = (kw) => {
+  let rest = normalize(kw);
+  const chars = [];
+  for (const cn of NORMALIZED_CHARS) {
+    if (rest.includes(cn)) {
+      chars.push(cn);
+      rest = rest.replace(cn, '');
+    }
+  }
+  const types = [];
+  for (const tn of NORMALIZED_TYPES) {
+    if (rest.includes(tn)) {
+      types.push(tn);
+      rest = rest.replace(tn, '');
+    }
+  }
+  return { chars, types, rest };
+};
+
+function App() {
+  const { items, setStatus, addPriceRecord, removePriceRecord, updatePriceRecord, increaseWishQuantity, decreaseWishQuantity, setWishPriceMin, setWishPriceMax, ownedCount, ownedItems, ownedTotalQuantity, ownedTotalPrice, wishCount, wishItems, wishTotalQuantity, wishTotalPriceMin, wishTotalPriceMax, totalCount } = useCollection();
+  const [activeTab, setActiveTab] = useState('collection');
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [exportingImage, setExportingImage] = useState(false);
+  const { hasUpdate, dismiss: dismissUpdate } = useVersionCheck();
+  const { folders, createFolder, renameFolder, deleteFolder, addItemToFolder, removeItemFromFolder, getItemFolderId } = useFolders();
+  const [activeFolder, setActiveFolder] = useState(null); // null=全部, '__uncategorized__'=未分类, folderId=指定文件夹
+
+  const getInitialFilter = (param, defaultValue) => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get(param) || defaultValue;
+  };
+
+  const [filterSeries, setFilterSeries] = useState(() => getInitialFilter('series', '全部'));
+  const [filterChar, setFilterChar] = useState(() => getInitialFilter('character', '全部'));
+  const [filterType, setFilterType] = useState(() => getInitialFilter('type', '全部'));
+  const [filterStatus, setFilterStatus] = useState(() => getInitialFilter('status', '全部'));
+  const [filterCharCount, setFilterCharCount] = useState(() => getInitialFilter('charcount', '全部'));
+  // 商品系列（从商品名自动识别，详情页点击系列跳转筛选）
+  const [filterProductSeries, setFilterProductSeries] = useState(() => getInitialFilter('productseries', ''));
+  const [searchInput, setSearchInput] = useState(() => getInitialFilter('search', ''));
+  // 延迟过滤：输入即时响应，过滤/重渲染在低优先级执行，缓解移动端搜索卡顿
+  const searchKeyword = useDeferredValue(searchInput);
+  const [showBackTop, setShowBackTop] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setShowBackTop(window.scrollY > 300);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  const scrollToTop = useCallback(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
+  useEffect(() => {
+    // 系列筛选可能是"组合"（如 WM）→ 角色下拉候选为该组合成员；否则为该系列角色
+    const activeGroup = getCharacterGroupByName(filterSeries);
+    const availableChars = activeGroup
+      ? activeGroup.characters
+      : getCharactersBySeries(filterSeries);
+    // 角色=其他是虚拟选项，始终合法；其余必须是所选系列/组合下真实存在的角色
+    if (filterChar !== '全部' && filterChar !== '其他' && !availableChars.includes(filterChar)) {
+      setFilterChar('全部');
+    }
+    // 旧 URL 带入非法系列值时自动回退为"全部"（组合名如 WM 属于合法值）
+    if (!SERIES_LIST.includes(filterSeries) && !activeGroup) {
+      setFilterSeries('全部');
+    }
+    // 单向联动：角色下拉选「其他」时，角色数自动同步为「其他(不含角色)」
+    // —— 注意：这是单向同步；反向（手动先选角色数=其他(不含角色)）不会强改角色筛选，
+    //    因为用户需要保留角色=具体角色名 AND 角色数=其他(不含角色) 的叠加能力。
+    if (filterChar === '其他' && filterCharCount !== '其他(不含角色)') {
+      setFilterCharCount('其他(不含角色)');
+    }
+    // 吉祥物（其他系列角色如 天使熊/Meruli）不参与角色数分类 → 角色数默认回落到"全部"
+    if (OTHER_SERIES_CHARACTERS.has(filterChar) && filterCharCount !== '全部') {
+      setFilterCharCount('全部');
+    }
+  }, [filterSeries, filterChar, filterCharCount]);
+
+  // 预计算搜索索引：每件商品的标准化搜索文本只算一次，避免每次按键对全部商品跑正则
+  const searchIndex = useMemo(() => {
+    const map = new Map();
+    for (const it of items) {
+      map.set(it.id, {
+        char: normalize(it.character),
+        type: normalize(it.type),
+        text: normalize([
+          it.name, it.type, it.subtitle, it.craft, it.material,
+          it.characterRomaji, it.characterAlias, it.characterPinyin,
+          it.series, ...(it.productSeries || []),
+        ].join(' ')),
+      });
+    }
+    return map;
+  }, [items]);
+
+  const filteredItems = useMemo(() => {
+    // 解析搜索词（仅当关键词变化时执行一次，提取角色名与种类名）
+    const parsedKw = searchKeyword ? extractSearchParts(searchKeyword) : null;
+
+    return items.filter(item => {
+      // 系列/组合筛选：选"全部"不过滤；选组合（如 WM）按角色成员匹配；
+      // 否则按商品归属的系列匹配
+      const activeGroup = getCharacterGroupByName(filterSeries);
+      const matchSeries = filterSeries === '全部'
+        || (activeGroup
+          ? matchCharacterGroup(item.character, activeGroup.characters)
+          : item.series.includes(filterSeries));
+      // 角色筛选：选「其他」= 商品不含任何真实角色（全是系列名/其他/空）
+      const matchChar = filterChar === '全部'
+        ? true
+        : filterChar === '其他'
+          ? isCharacterless(item.character)
+          : item.character.includes(filterChar);
+      const matchType = filterType === '全部' || splitTypes(item.type).includes(filterType);
+      const matchProductSeries = !filterProductSeries || item.productSeries.includes(filterProductSeries);
+      const matchStatus = filterStatus === '全部' || item.status === filterStatus;
+
+      // 角色数量筛选
+      // - 单人 / 多人：按"偶像角色数"归类（吉祥物如 天使熊/Meruli 不计入人数），
+      //   但 character 里显式写了 "其他" 的商品仍优先归到「其他(不含角色)」
+      // - 其他(不含角色)：character 含"其他"字样，或没有任何偶像角色（纯吉祥物/系列名/空）
+      const hasOtherLiteral = String(item.character || '').includes('其他');
+      const realCount = countRealCharacters(item.character);
+      const matchCharCount = filterCharCount === '全部' ||
+        (filterCharCount === '单人' && !hasOtherLiteral && realCount === 1) ||
+        (filterCharCount === '多人' && !hasOtherLiteral && realCount >= 2) ||
+        (filterCharCount === '其他(不含角色)' && (hasOtherLiteral || realCount === 0));
+
+      // 关键词匹配：提取出的角色名必须都在商品角色中、种类名必须在商品种类中，剩余关键词匹配预计算的搜索文本
+      const matchSearch = !searchKeyword || !parsedKw || (() => {
+        const { chars, types, rest } = parsedKw;
+        const idx = searchIndex.get(item.id);
+        if (!chars.every(cn => idx.char.includes(cn))) return false;
+        if (!types.every(tn => idx.type.includes(tn))) return false;
+        if (!rest) return true;
+        return idx.text.includes(rest);
+      })();
+
+      // 文件夹过滤
+      const folderType = activeTab === 'owned' ? 'owned' : activeTab === 'wishlist' ? 'wish' : null;
+      let matchFolder = true;
+      if (folderType && activeFolder !== null) {
+        const fid = getItemFolderId(folderType, item.id);
+        if (activeFolder === '__uncategorized__') {
+          matchFolder = !fid;
+        } else {
+          matchFolder = fid === activeFolder;
+        }
+      }
+
+      return matchSeries && matchChar && matchType && matchProductSeries && matchStatus && matchCharCount && matchSearch && matchFolder;
+    });
+  }, [items, searchIndex, filterSeries, filterChar, filterType, filterProductSeries, filterStatus, filterCharCount, searchKeyword, activeTab, activeFolder, getItemFolderId]);
+
+  // 增量渲染：先渲染前 100 张卡片，滚动到底部自动加载更多，避免一次性渲染数千个 DOM
+  const PAGE_SIZE = 100;
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [filterSeries, filterChar, filterType, filterStatus, filterCharCount, searchKeyword, activeTab, activeFolder]);
+  const visibleItems = useMemo(() => filteredItems.slice(0, visibleCount), [filteredItems, visibleCount]);
+  const hasMore = visibleCount < filteredItems.length;
+  const handleLoadMore = useCallback(() => {
+    setVisibleCount(c => Math.min(c + PAGE_SIZE, filteredItems.length));
+  }, [filteredItems.length]);
+
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (filterSeries !== '全部') params.set('series', filterSeries);
+    if (filterChar !== '全部') params.set('character', filterChar);
+    if (filterType !== '全部') params.set('type', filterType);
+    if (filterCharCount !== '全部') params.set('charcount', filterCharCount);
+    if (filterProductSeries) params.set('productseries', filterProductSeries);
+    if (searchKeyword) params.set('search', searchKeyword);
+    const query = params.toString();
+    const newUrl = query ? `${window.location.pathname}?${query}` : window.location.pathname;
+    window.history.replaceState({}, '', newUrl);
+  }, [filterSeries, filterChar, filterType, filterCharCount, filterProductSeries, searchKeyword]);
+
+  const handleReset = () => {
+    setFilterSeries('全部');
+    setFilterChar('全部');
+    setFilterType('全部');
+    setFilterCharCount('全部');
+    setFilterProductSeries('');
+    setSearchInput('');
+  };
+
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    setActiveFolder(null);
+    if (tab === 'collection') {
+      setFilterStatus('全部');
+    } else if (tab === 'owned') {
+      setFilterSeries('全部');
+      setFilterChar('全部');
+      setFilterType('全部');
+      setFilterCharCount('全部');
+      setFilterProductSeries('');
+      setSearchInput('');
+      setFilterStatus('owned');
+    } else if (tab === 'wishlist') {
+      setFilterSeries('全部');
+      setFilterChar('全部');
+      setFilterType('全部');
+      setFilterCharCount('全部');
+      setFilterProductSeries('');
+      setSearchInput('');
+      setFilterStatus('wish');
+    }
+  };
+
+  // 点击详情页的系列 → 跳转到图鉴并按该系列筛选（清空搜索词）
+  const handleSeriesClick = useCallback((series) => {
+    setFilterProductSeries(series);
+    setSearchInput('');
+    setSelectedItem(null);
+    setActiveTab('collection');
+  }, []);
+
+  const handleCardClick = useCallback((item) => {
+    setSelectedItem(item);
+  }, []);
+
+  // 文件夹操作
+  const currentFolderType = activeTab === 'owned' ? 'owned' : activeTab === 'wishlist' ? 'wish' : null;
+
+  const handleSelectFolder = (folderId) => {
+    setActiveFolder(folderId);
+  };
+
+  const handleCreateFolder = (name) => {
+    if (currentFolderType) createFolder(currentFolderType, name);
+  };
+
+  const handleRenameFolder = (folderId, newName) => {
+    if (currentFolderType) renameFolder(currentFolderType, folderId, newName);
+  };
+
+  const handleDeleteFolder = (folderId) => {
+    if (currentFolderType) deleteFolder(currentFolderType, folderId);
+  };
+
+  const handleMoveToFolder = (itemId, folderId, type) => {
+    if (!type) return;
+    if (folderId === null) {
+      // 从未分类中移除所有文件夹归属
+      const currentFid = getItemFolderId(type, itemId);
+      if (currentFid) removeItemFromFolder(type, currentFid, itemId);
+    } else {
+      addItemToFolder(type, folderId, itemId);
+    }
+  };
+
+  const handleCreateFolderForModal = (type, name) => {
+    if (!type) return null;
+    const folder = createFolder(type, name);
+    return folder ? folder.id : null;
+  };
+
+  const handleModalToggle = (id, targetStatus, version) => {
+    const currentItem = items.find(i => i.id === id);
+    if (!currentItem) return;
+    // 版本级商品（如 初版/再贩）：只切换当前选中版本的收藏状态
+    if (version) {
+      const currentVersionStatus = currentItem.versionStatuses?.[version] || null;
+      setStatus(id, currentVersionStatus === targetStatus ? null : targetStatus, version);
+    } else if (currentItem.status === targetStatus) {
+      setStatus(id, null);
+    } else {
+      setStatus(id, targetStatus, version);
+    }
+  };
+
+  const exportWishlistCSV = () => {
+    if (wishItems.length === 0) {
+      alert('心愿单是空的，没有可导出的内容~');
+      return;
+    }
+    const headers = ['商品名称', '角色', '系列', '种类', '最低心理价(元)', '最高心理价(元)', '数量'];
+    const rows = wishItems.map(item => [
+      item.name,
+      item.character,
+      item.series,
+      item.type && splitTypes(item.type).join('/'),
+      (item.wishPriceMin || 0).toFixed(2),
+      (item.wishPriceMax || 0).toFixed(2),
+      item.wishQuantity || 1,
+    ]);
+    const totalRow = ['心理总价范围', '', '', '', `¥${wishTotalPriceMin.toFixed(2)}`, `¥${wishTotalPriceMax.toFixed(2)}`, wishTotalQuantity];
+    const csvContent = '\uFEFF' + [headers, ...rows, totalRow]
+      .map(row => row.map(cell => `"${cell}"`).join(','))
+      .join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    const date = new Date().toISOString().slice(0, 10);
+    link.download = `心愿单_${date}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const exportWishlistImage = async () => {
+    if (wishItems.length === 0) { alert('心愿单是空的，没有可导出的内容~'); return; }
+    setExportingImage(true);
+    try {
+      const canvas = await renderShareImageToCanvas({
+        items: wishItems,
+        type: 'wish',
+        totalQuantity: wishTotalQuantity,
+      });
+      await downloadCanvasAsPng(canvas, `心愿单_${new Date().toISOString().slice(0, 10)}.png`);
+    } catch (err) {
+      console.error('导出图片失败:', err);
+      alert('导出图片失败，请稍后再试~');
+    } finally {
+      setExportingImage(false);
+    }
+  };
+
+  const exportOwnedCSV = () => {
+    if (ownedItems.length === 0) {
+      alert('收藏是空的，没有可导出的内容~');
+      return;
+    }
+    const headers = ['商品名称', '角色', '系列', '种类', '购入单价(元)', '数量', '购入总价(元)'];
+    const rows = ownedItems.map(item => [
+      item.name,
+      item.character,
+      item.series,
+      item.type && splitTypes(item.type).join('/'),
+      item.quantity > 0 ? ((item.totalPrice || 0) / item.quantity).toFixed(2) : '0.00',
+      item.quantity || 0,
+      (item.totalPrice || 0).toFixed(2),
+    ]);
+    const totalRow = ['合计', '', '', '', '', ownedTotalQuantity, ownedTotalPrice.toFixed(2)];
+    const csvContent = '\uFEFF' + [headers, ...rows, totalRow]
+      .map(row => row.map(cell => `"${cell}"`).join(','))
+      .join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    const date = new Date().toISOString().slice(0, 10);
+    link.download = `我的收藏_${date}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const exportOwnedImage = async () => {
+    if (ownedItems.length === 0) { alert('收藏是空的，没有可导出的内容~'); return; }
+    setExportingImage(true);
+    try {
+      const canvas = await renderShareImageToCanvas({
+        items: ownedItems,
+        type: 'owned',
+        totalQuantity: ownedTotalQuantity,
+        totalPrice: ownedTotalPrice,
+      });
+      await downloadCanvasAsPng(canvas, `我的收藏_${new Date().toISOString().slice(0, 10)}.png`);
+    } catch (err) {
+      console.error('导出图片失败:', err);
+      alert('导出图片失败，请稍后再试~');
+    } finally {
+      setExportingImage(false);
+    }
+  };
+
+  const modalItem = selectedItem
+    ? items.find(i => i.id === selectedItem.id) || selectedItem
+    : null;
+
+  // 详情弹窗里的文件夹归属按商品当前状态决定，这样在图鉴页打开商品也能建/选文件夹
+  const modalFolderType = modalItem
+    ? (modalItem.status === 'owned' ? 'owned' : modalItem.status === 'wish' ? 'wish' : null)
+    : null;
+
+  return (
+    <div className="min-h-screen bg-bg-primary">
+      {hasUpdate && (
+        <div className="sticky top-0 z-[100] bg-accent text-white px-4 py-2.5 flex items-center justify-center gap-3 shadow-md">
+          <span className="text-sm font-medium">网站已更新，建议刷新页面</span>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-1 rounded-full bg-white text-accent text-sm font-bold hover:bg-white/90 transition-colors"
+          >
+            立即刷新
+          </button>
+          <button
+            onClick={dismissUpdate}
+            className="text-white/70 hover:text-white text-sm transition-colors"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+      <Header activeTab={activeTab} onTabChange={handleTabChange} />
+
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        <div className="text-center mb-8">
+          <h2 className="font-quick text-3xl sm:text-4xl font-bold text-text-primary mb-2">
+            {activeTab === 'wishlist' ? 'WISHLIST' : activeTab === 'owned' ? 'MY COLLECTION' : 'GOODS COLLECTION'}
+          </h2>
+          <p className="text-text-secondary text-sm sm:text-base">
+            {activeTab === 'wishlist' ? '你想要的周边都在这里' : activeTab === 'owned' ? '你已拥有的周边收藏' : '持续完善中/建议定期刷新页面以免遗漏更新内容'}
+          </p>
+        </div>
+
+        <StatsBar
+          displayCount={filteredItems.length}
+          ownedCount={ownedCount}
+          ownedTotalQuantity={ownedTotalQuantity}
+          wishCount={wishCount}
+          wishTotalQuantity={wishTotalQuantity}
+          totalCount={totalCount}
+          activeTab={activeTab}
+        />
+
+        {(activeTab === 'owned' || activeTab === 'wishlist') && (
+          <CollectionProgress items={items} ownedItems={ownedItems} filterCharCount={filterCharCount} />
+        )}
+
+        {activeTab === 'collection' && (
+          <>
+            <div className="mb-6">
+              <SearchBar
+                value={searchInput}
+                onChange={setSearchInput}
+                onClear={() => setSearchInput('')}
+              />
+            </div>
+
+            <FilterBar
+              filterSeries={filterSeries}
+              filterChar={filterChar}
+              filterType={filterType}
+              filterCharCount={filterCharCount}
+              onSeriesChange={setFilterSeries}
+              onCharChange={setFilterChar}
+              onTypeChange={setFilterType}
+              onCharCountChange={setFilterCharCount}
+              onReset={handleReset}
+            />
+
+            {filterProductSeries && (
+              <div className="mt-3 flex items-center gap-2 text-sm">
+                <span className="text-text-secondary">当前系列：</span>
+                <span className="px-2.5 py-1 rounded-full bg-accent/10 text-accent font-medium">{filterProductSeries}</span>
+                <button onClick={() => setFilterProductSeries('')} className="px-2 py-1 text-text-secondary hover:text-accent transition-colors">✕ 清除</button>
+              </div>
+            )}
+          </>
+        )}
+
+        {activeTab === 'wishlist' && (
+          <>
+            <div className="mb-4">
+              <FolderBar
+                folders={folders.wish}
+                activeFolder={activeFolder}
+                onSelectFolder={handleSelectFolder}
+                onCreateFolder={handleCreateFolder}
+                onRenameFolder={handleRenameFolder}
+                onDeleteFolder={handleDeleteFolder}
+              />
+            </div>
+            <div className="flex justify-end gap-3 mb-6">
+            <button
+              onClick={exportWishlistCSV}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-rose-100 text-rose-600 font-medium text-sm
+                         hover:bg-rose-200 transition-all duration-300 shadow-sm"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              导出表格
+            </button>
+            <button
+              onClick={exportWishlistImage}
+              disabled={exportingImage}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-rose-400 to-pink-400 text-white font-medium text-sm
+                         hover:from-rose-500 hover:to-pink-500 transition-all duration-300 shadow-md disabled:opacity-50"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              {exportingImage ? '生成中...' : '导出图片'}
+            </button>
+          </div>
+          </>
+        )}
+
+        {activeTab === 'owned' && (
+          <>
+            <div className="mb-4">
+              <FolderBar
+                folders={folders.owned}
+                activeFolder={activeFolder}
+                onSelectFolder={handleSelectFolder}
+                onCreateFolder={handleCreateFolder}
+                onRenameFolder={handleRenameFolder}
+                onDeleteFolder={handleDeleteFolder}
+              />
+            </div>
+            <div className="flex justify-end gap-3 mb-6">
+            <button
+              onClick={exportOwnedCSV}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-yellow-100 text-yellow-700 font-medium text-sm
+                         hover:bg-yellow-200 transition-all duration-300 shadow-sm"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              导出表格
+            </button>
+            <button
+              onClick={exportOwnedImage}
+              disabled={exportingImage}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-yellow-400 to-amber-400 text-white font-medium text-sm
+                         hover:from-yellow-500 hover:to-amber-500 transition-all duration-300 shadow-md disabled:opacity-50"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              {exportingImage ? '生成中...' : '导出图片'}
+            </button>
+          </div>
+          </>
+        )}
+
+        <CardGrid items={visibleItems} onCardClick={handleCardClick} onLoadMore={handleLoadMore} hasMore={hasMore} />
+
+        <footer className="mt-16 pb-8 text-center">
+          <p className="text-text-secondary text-xs sm:text-sm">
+            Made by Solitstar
+          </p>
+          <p className="text-text-secondary/60 text-xs mt-1">
+            点击卡片查看详情，在详情页切换收藏状态
+          </p>
+        </footer>
+      </main>
+
+      <ItemModal
+        item={modalItem}
+        onClose={() => setSelectedItem(null)}
+        onToggleStatus={handleModalToggle}
+        onAddPriceRecord={addPriceRecord}
+        onRemovePriceRecord={removePriceRecord}
+        onUpdatePriceRecord={updatePriceRecord}
+        onIncreaseWishQty={increaseWishQuantity}
+        onDecreaseWishQty={decreaseWishQuantity}
+        onSetWishPriceMin={setWishPriceMin}
+        onSetWishPriceMax={setWishPriceMax}
+        folders={modalFolderType ? folders[modalFolderType] : []}
+        itemFolderId={modalItem && modalFolderType ? getItemFolderId(modalFolderType, modalItem.id) : null}
+        onMoveToFolder={(folderId) => modalItem && handleMoveToFolder(modalItem.id, folderId, modalFolderType)}
+        onCreateFolder={(name) => handleCreateFolderForModal(modalFolderType, name)}
+        onSeriesClick={handleSeriesClick}
+      />
+
+      {showBackTop && (
+        <button
+          onClick={scrollToTop}
+          className="fixed right-4 sm:right-6 z-50 w-10 h-10 rounded-full bg-accent/80 hover:bg-accent text-white
+                     shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center
+                     active:scale-90"
+          style={{ bottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))' }}
+          aria-label="回到顶部"
+        >
+          <svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 15l7-7 7 7" />
+          </svg>
+        </button>
+      )}
+    </div>
+  );
+}
+
+export default App;

@@ -1,0 +1,155 @@
+import { useState, memo } from 'react';
+import { splitTypes } from '../data/items';
+import { formatCharacterDisplay } from '../data/characters';
+import { LOCAL_IMAGES } from '../data/localImages';
+import { withImgurSize, getCardImgSize } from '../utils/imageUrl';
+
+const GoodsCard = ({ item, onClick, priority = false }) => {
+  const [imgLoaded, setImgLoaded] = useState(false);
+  const [imgError, setImgError] = useState(false);
+  const [fallbackStep, setFallbackStep] = useState(0);
+
+  const getStatusBadge = () => {
+    if (item.status === 'owned') {
+      const qty = item.quantity || 1;
+      return (
+        <div className="absolute top-1.5 left-1.5 sm:top-3 sm:left-3 z-10">
+          <span className="w-7 h-7 sm:w-9 sm:h-9 rounded-full bg-yellow-400 text-white text-[11px] sm:text-sm font-bold shadow-md flex items-center justify-center tabular-nums">
+            ×{qty}
+          </span>
+        </div>
+      );
+    }
+    if (item.status === 'wish') {
+      return (
+        <div className="absolute top-1.5 left-1.5 sm:top-3 sm:left-3 z-10">
+          <span className="bg-rose-400 text-white text-[10px] sm:text-xs font-bold px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded-full shadow-md flex items-center gap-0.5 sm:gap-1">
+            ❤️ 想要
+          </span>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  const getCardBorder = () => {
+    if (item.status === 'owned') return 'ring-2 ring-yellow-400/60';
+    if (item.status === 'wish') return 'ring-2 ring-rose-400/60';
+    return '';
+  };
+
+  // 图片加载优先级：本地缓存（仅当该商品确实有本地图）→ 远程图床 → SVG占位
+  const base = import.meta.env.BASE_URL; // '/' dev, '/aikatsu/' build
+  // 多版本商品按收藏版本显示对应图（无收藏版本时默认第 0 版）
+  const versionIdx = item?.images?.length > 1
+    ? Math.max(0, item.images.findIndex(img => (img.label || img.name) === item.version))
+    : 0;
+  const vSuffix = item?.images?.length > 1 ? `_v${versionIdx}` : '';
+  // 本地缓存图只覆盖少量商品，没命中就直接用远程图，
+  // 避免为绝大多数商品先发起 3 次必然 404 的请求（串行失败后才加载远程图）
+  const localExt = LOCAL_IMAGES[`item_${item.id}${vSuffix}`];
+  const localSrc = localExt ? `${base}images/item_${item.id}${vSuffix}.${localExt}` : null;
+  // 远程图床（优先当前版本图，imgur 缩略图：手机 320px、桌面 640px）
+  const remoteSrc = withImgurSize(item.images?.[versionIdx]?.url || item.image, getCardImgSize());
+  const initialSrc = localSrc || remoteSrc;
+
+  // 多版本商品已收藏时，标题直接显示所选版本的完整名字
+  const displayName = item.images?.length > 1 && item.version && item.images[versionIdx]?.name
+    ? item.images[versionIdx].name
+    : item.name;
+
+  const fallbacks = [
+    ...(localSrc ? [remoteSrc] : []), // 有本地图时，本地失败再回退远程
+    `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Crect fill='%23f3f4f6' width='200' height='200'/%3E%3Ctext x='50%25' y='45%25' dominant-baseline='middle' text-anchor='middle' fill='%239ca3af' font-size='14'%3E${encodeURIComponent(item.name.substring(0, 8))}%3C/text%3E%3Ctext x='50%25' y='60%25' dominant-baseline='middle' text-anchor='middle' fill='%23d1d5db' font-size='11'%3E图片加载失败%3C/text%3E%3C/svg%3E`,
+  ];
+
+  const handleImgError = (e) => {
+    if (fallbackStep < fallbacks.length) {
+      e.target.src = fallbacks[fallbackStep];
+      setFallbackStep(fallbackStep + 1);
+    } else {
+      setImgError(true);
+    }
+  };
+
+  // 心愿单商品：已填写心理价时在卡片上直接显示价格区间（整数不带小数，避免过长）
+  const wishPriceMin = Number(item.wishPriceMin) || 0;
+  const wishPriceMax = Number(item.wishPriceMax) || 0;
+  const fmtPrice = (n) => (Number.isInteger(n) ? String(n) : n.toFixed(2));
+  const wishPriceLabel = item.status === 'wish' && wishPriceMin > 0
+    ? (wishPriceMax > 0
+      ? `¥${fmtPrice(wishPriceMin)}~${fmtPrice(wishPriceMax)}`
+      : `¥${fmtPrice(wishPriceMin)}`)
+    : null;
+
+  return (
+    <div
+      onClick={() => onClick(item)}
+      className={`
+        group relative bg-card-bg rounded-2xl overflow-hidden shadow-card
+        cursor-pointer transition-all duration-300 ease-out
+        hover:shadow-soft hover:-translate-y-1
+        content-visibility-auto contain-intrinsic-size-[auto_280px]
+        will-change-transform
+        ${getCardBorder()}
+      `}
+    >
+      {getStatusBadge()}
+
+      {/* 图片容器 - 使用 object-contain 完整展示图片 */}
+      <div className="relative aspect-square overflow-hidden bg-[#f4f5f7] rounded-t-2xl">
+        {/* 骨架屏加载动画 */}
+        {!imgLoaded && !imgError && (
+          <div className="absolute inset-0 animate-pulse bg-gradient-to-b from-gray-200 via-gray-100 to-gray-200" />
+        )}
+
+        <img
+          src={initialSrc}
+          alt={displayName}
+          loading={priority ? "eager" : "lazy"}
+          fetchPriority={priority ? "high" : "auto"}
+          decoding="async"
+          onLoad={() => { setImgLoaded(true); setImgError(false); }}
+          onError={handleImgError}
+          style={{
+            opacity: imgLoaded ? 1 : 0,
+            transition: 'opacity 0.3s ease-in-out',
+          }}
+          className="w-full h-full object-contain p-1.5 sm:p-2 transition-transform duration-500 group-hover:scale-105"
+        />
+
+        {/* 心愿单心理价角标：已填写时直接显示在卡片上 */}
+        {wishPriceLabel && (
+          <div className="absolute bottom-1.5 right-1.5 sm:bottom-3 sm:right-3 z-10">
+            <span className="bg-rose-500/95 text-white text-[10px] sm:text-xs font-bold px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded-full shadow-md whitespace-nowrap font-quick">
+              {wishPriceLabel}
+            </span>
+          </div>
+        )}
+      </div>
+
+      <div className="p-2.5 sm:p-4">
+        {item.subtitle && (
+          <p className="text-[10px] sm:text-xs text-text-secondary font-quick mb-0.5 truncate">
+            {item.subtitle}
+          </p>
+        )}
+        <h3 className="font-medium text-text-primary text-xs sm:text-base mb-1.5 sm:mb-2 line-clamp-2 leading-tight">
+          {displayName}
+        </h3>
+        <div className="flex flex-wrap gap-1 sm:gap-1.5">
+          <span className="inline-block text-[10px] sm:text-xs px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-full bg-accent/15 text-accent font-medium truncate max-w-full">
+            {formatCharacterDisplay(item.character, item.series, { forCardCompact: true })}
+          </span>
+          <span className="hidden sm:inline-block text-xs px-2.5 py-1 rounded-full bg-bg-primary text-text-secondary font-medium">
+            {splitTypes(item.type).join('/')}
+          </span>
+        </div>
+      </div>
+
+      <div className="absolute inset-0 bg-accent/0 group-hover:bg-accent/5 transition-colors duration-300 pointer-events-none rounded-2xl" />
+    </div>
+  );
+};
+
+export default memo(GoodsCard);
