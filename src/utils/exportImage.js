@@ -577,7 +577,7 @@ export async function renderShareImageToCanvas({ items, type, totalQuantity, tot
   ctx.fillText('Made by Solitstar', WIDTH / 2, cy + 16);
   ctx.font = '9px "Quicksand", "Noto Sans SC", sans-serif';
   ctx.fillStyle = 'rgba(0,0,0,0.25)';
-  ctx.fillText('LOVE LIVE! GOODS COLLECTION', WIDTH / 2, cy + 32);
+  ctx.fillText('LOVELIVE GOODS COLLECTION', WIDTH / 2, cy + 32);
 
   console.groupEnd();
   return canvas;

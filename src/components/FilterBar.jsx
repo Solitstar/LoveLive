@@ -164,7 +164,7 @@ const FilterBar = ({
         <button
           onClick={onReset}
           className="px-6 py-2.5 rounded-xl bg-accent/10 text-accent font-medium text-sm
-                     hover:bg-accent hover:text-white transition-all duration-300
+                     hover:bg-accent-soft hover:text-white transition-all duration-300
                      flex items-center justify-center gap-2 group
                      self-end lg:self-auto"
         >

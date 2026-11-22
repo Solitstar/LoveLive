@@ -98,7 +98,7 @@ const CollectionProgress = ({ items, ownedItems, filterCharCount = '全部' }) =
     };
   }, [selectedChar, selectedType, selectedCharCount, items, ownedItems, filterCharCount]);
 
-  const progressColor = 'from-pink-300 to-accent';
+  const progressColor = 'from-accent/30 to-accent';
 
   return (
     <div className="bg-card-bg rounded-2xl shadow-card px-5 sm:px-6 py-5 mb-6">

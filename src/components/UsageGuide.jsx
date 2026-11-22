@@ -117,7 +117,7 @@ const UsageGuide = ({ open, onClose }) => {
 
             <button
               onClick={onClose}
-              className="mt-5 w-full py-2.5 rounded-xl bg-accent text-white text-sm font-medium hover:bg-accent/90 transition-colors"
+              className="mt-5 w-full py-2.5 rounded-xl bg-accent-soft text-white text-sm font-medium hover:bg-accent-soft-hover transition-colors"
             >
               开始使用
             </button>

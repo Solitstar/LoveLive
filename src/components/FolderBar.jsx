@@ -123,7 +123,7 @@ const FolderBar = ({
                 />
                 <button
                   onMouseDown={(e) => { e.preventDefault(); handleRename(tab.id); }}
-                  className="w-7 h-7 flex-shrink-0 rounded-full bg-accent text-white flex items-center justify-center hover:bg-accent/80 transition-colors"
+                  className="w-7 h-7 flex-shrink-0 rounded-full bg-accent-soft text-white flex items-center justify-center hover:bg-accent-soft-hover transition-colors"
                   title="保存"
                 >
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
@@ -137,14 +137,14 @@ const FolderBar = ({
                 title={tab.label}
                 className={`flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-medium transition-all duration-200 whitespace-nowrap ${
                   isActive
-                    ? 'bg-accent text-white shadow-sm'
+                    ? 'bg-accent-soft text-white shadow-sm'
                     : 'bg-card-bg text-text-secondary hover:bg-accent/10 border border-accent/10'
                 }`}
               >
                 <span className="max-w-[100px] overflow-hidden text-ellipsis">{tab.label}</span>
                 {tab.count !== null && tab.count > 0 && (
                   <span className={`text-[10px] px-1.5 py-0.5 rounded-full flex-shrink-0 ${
-                    isActive ? 'bg-white/20 text-white' : 'bg-accent/10 text-accent'
+                    isActive ? 'bg-white/25 text-white' : 'bg-accent/10 text-accent'
                   }`}>
                     {tab.count}
                   </span>
@@ -158,7 +158,7 @@ const FolderBar = ({
                 ref={(el) => { menuBtnRefs.current[tab.id] = el; }}
                 onClick={() => setMenuId(menuId === tab.id ? null : tab.id)}
                 className={`absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full flex items-center justify-center
-                  ${isActive ? 'bg-white/30 text-white hover:bg-white/50' : 'bg-bg-primary text-text-secondary hover:bg-accent/10 opacity-100 sm:opacity-0 sm:group-hover:opacity-100'}
+                  ${isActive ? 'bg-white/25 text-white hover:bg-white/40' : 'bg-bg-primary text-text-secondary hover:bg-accent/10 opacity-100 sm:opacity-0 sm:group-hover:opacity-100'}
                   transition-opacity`}
                 title="更多操作"
               >
@@ -195,7 +195,7 @@ const FolderBar = ({
           />
           <button
             onClick={handleCreate}
-            className="w-7 h-7 flex-shrink-0 rounded-full bg-accent text-white flex items-center justify-center hover:bg-accent/80 transition-colors"
+            className="w-7 h-7 flex-shrink-0 rounded-full bg-accent-soft text-white flex items-center justify-center hover:bg-accent-soft-hover transition-colors"
             title="创建"
           >
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">

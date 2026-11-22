@@ -25,7 +25,7 @@ const Header = ({ activeTab, onTabChange }) => {
           <div className="flex items-center justify-between h-14 sm:h-16">
             <div className="flex items-center flex-shrink-0">
               <h1 className="font-quick text-base sm:text-2xl font-bold text-text-primary tracking-wide whitespace-nowrap">
-                LOVE LIVE!<span className="hidden sm:inline"> GOODS</span>
+                LOVELIVE<span className="hidden sm:inline"> GOODS</span>
               </h1>
             </div>
             <nav className="flex gap-0.5 sm:gap-2 ml-1">
@@ -35,7 +35,7 @@ const Header = ({ activeTab, onTabChange }) => {
                   onClick={() => onTabChange(tab.key)}
                   className={`px-2 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all duration-300 whitespace-nowrap ${
                     activeTab === tab.key
-                      ? 'bg-accent text-white shadow-md'
+                      ? 'bg-accent-soft text-white shadow-sm'
                       : 'text-text-secondary hover:bg-accent/10 hover:text-text-primary'
                   }`}
                 >

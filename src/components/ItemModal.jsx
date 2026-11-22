@@ -190,7 +190,7 @@ const ItemModal = ({ item, onClose, onToggleStatus, onAddPriceRecord, onRemovePr
                           onClick={() => handleSelectImage(idx)}
                           className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-medium border transition-all ${
                             selectedIdx === idx
-                              ? 'bg-accent text-white border-accent shadow-md'
+                              ? 'bg-accent-soft text-white border-accent-soft shadow-sm'
                               : 'bg-white text-text-secondary border-accent/20 hover:border-accent/50 hover:text-text-primary'
                           }`}
                         >
@@ -349,7 +349,7 @@ const ItemModal = ({ item, onClose, onToggleStatus, onAddPriceRecord, onRemovePr
                       onClick={() => onMoveToFolder(null)}
                       className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
                         !itemFolderId
-                          ? 'bg-accent text-white shadow-sm'
+                          ? 'bg-accent-soft text-white shadow-sm'
                           : 'bg-white text-text-secondary border border-accent/20 hover:bg-accent/5'
                       }`}
                     >
@@ -361,7 +361,7 @@ const ItemModal = ({ item, onClose, onToggleStatus, onAddPriceRecord, onRemovePr
                         onClick={() => onMoveToFolder(f.id)}
                         className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all max-w-full truncate ${
                           itemFolderId === f.id
-                            ? 'bg-accent text-white shadow-sm'
+                            ? 'bg-accent-soft text-white shadow-sm'
                             : 'bg-white text-text-secondary border border-accent/20 hover:bg-accent/5'
                         }`}
                       >
@@ -393,8 +393,8 @@ const ItemModal = ({ item, onClose, onToggleStatus, onAddPriceRecord, onRemovePr
                       <button
                         onClick={submitNewFolder}
                         disabled={!newFolderName.trim()}
-                        className="px-3 py-1.5 rounded-lg bg-accent text-white text-xs font-medium
-                                   hover:bg-accent/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                        className="px-3 py-1.5 rounded-lg bg-accent-soft text-white text-xs font-medium
+                                   hover:bg-accent-soft-hover transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                       >
                         创建
                       </button>

@@ -413,7 +413,7 @@ function App() {
   return (
     <div className="min-h-screen bg-bg-primary">
       {hasUpdate && (
-        <div className="sticky top-0 z-[100] bg-accent text-white px-4 py-2.5 flex items-center justify-center gap-3 shadow-md">
+        <div className="sticky top-0 z-[100] bg-accent-soft text-white px-4 py-2.5 flex items-center justify-center gap-3 shadow-md">
           <span className="text-sm font-medium">网站已更新，建议刷新页面</span>
           <button
             onClick={() => window.location.reload()}
@@ -513,8 +513,8 @@ function App() {
             <button
               onClick={exportWishlistImage}
               disabled={exportingImage}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-rose-400 to-pink-400 text-white font-medium text-sm
-                         hover:from-rose-500 hover:to-pink-500 transition-all duration-300 shadow-md disabled:opacity-50"
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-accent-soft text-white font-medium text-sm
+                         hover:bg-accent-soft-hover transition-all duration-300 shadow-sm disabled:opacity-50"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -596,7 +596,7 @@ function App() {
       {showBackTop && (
         <button
           onClick={scrollToTop}
-          className="fixed right-4 sm:right-6 z-50 w-10 h-10 rounded-full bg-accent/80 hover:bg-accent text-white
+          className="fixed right-4 sm:right-6 z-50 w-10 h-10 rounded-full bg-accent-soft/90 hover:bg-accent-soft text-white
                      shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center
                      active:scale-90"
           style={{ bottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))' }}
