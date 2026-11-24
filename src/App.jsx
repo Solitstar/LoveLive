@@ -114,7 +114,7 @@ function App() {
         char: normalize(it.character),
         type: normalize(it.type),
         text: normalize([
-          it.name, it.type, it.subtitle, it.craft, it.material,
+          it.name, it.type, it.subtitle, it.craft, it.material, it.artist,
           it.characterRomaji, it.characterAlias, it.characterPinyin,
           it.series, ...(it.productSeries || []),
         ].join(' ')),
@@ -502,8 +502,8 @@ function App() {
             <div className="flex justify-end gap-3 mb-6">
             <button
               onClick={exportWishlistCSV}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-rose-100 text-rose-600 font-medium text-sm
-                         hover:bg-rose-200 transition-all duration-300 shadow-sm"
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-accent-soft/20 text-accent font-medium text-sm
+                         hover:bg-accent-soft/35 transition-all duration-300 shadow-sm"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />

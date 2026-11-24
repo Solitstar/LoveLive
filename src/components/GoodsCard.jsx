@@ -23,8 +23,11 @@ const GoodsCard = ({ item, onClick, priority = false }) => {
     if (item.status === 'wish') {
       return (
         <div className="absolute top-1.5 left-1.5 sm:top-3 sm:left-3 z-10">
-          <span className="bg-rose-400 text-white text-[10px] sm:text-xs font-bold px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded-full shadow-md flex items-center gap-0.5 sm:gap-1">
-            ❤️ 想要
+          <span className="bg-accent-soft text-white text-[10px] sm:text-xs font-bold px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded-full shadow-md flex items-center gap-0.5 sm:gap-1">
+            <svg className="w-3 h-3 sm:w-3.5 sm:h-3.5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+            </svg>
+            想要
           </span>
         </div>
       );
@@ -34,7 +37,7 @@ const GoodsCard = ({ item, onClick, priority = false }) => {
 
   const getCardBorder = () => {
     if (item.status === 'owned') return 'ring-2 ring-yellow-400/60';
-    if (item.status === 'wish') return 'ring-2 ring-rose-400/60';
+    if (item.status === 'wish') return 'ring-2 ring-accent-soft/60';
     return '';
   };
 
@@ -121,7 +124,7 @@ const GoodsCard = ({ item, onClick, priority = false }) => {
         {/* 心愿单心理价角标：已填写时直接显示在卡片上 */}
         {wishPriceLabel && (
           <div className="absolute bottom-1.5 right-1.5 sm:bottom-3 sm:right-3 z-10">
-            <span className="bg-rose-500/95 text-white text-[10px] sm:text-xs font-bold px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded-full shadow-md whitespace-nowrap font-quick">
+            <span className="bg-accent-soft/95 text-white text-[10px] sm:text-xs font-bold px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded-full shadow-md whitespace-nowrap font-quick">
               {wishPriceLabel}
             </span>
           </div>

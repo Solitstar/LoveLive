@@ -199,7 +199,7 @@ const ItemModal = ({ item, onClose, onToggleStatus, onAddPriceRecord, onRemovePr
                           {vs && (
                             <span
                               className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
-                                vs === 'owned' ? 'bg-yellow-400' : 'bg-rose-400'
+                                vs === 'owned' ? 'bg-yellow-400' : 'bg-accent-soft'
                               }`}
                             />
                           )}
@@ -298,6 +298,12 @@ const ItemModal = ({ item, onClose, onToggleStatus, onAddPriceRecord, onRemovePr
                     <span className="flex-1 min-w-0 break-words text-text-primary leading-relaxed">{item.craft}</span>
                   </div>
                 )}
+                {item.artist && (
+                  <div className="flex">
+                    <span className="w-16 text-text-secondary flex-shrink-0">画师</span>
+                    <span className="flex-1 min-w-0 break-words whitespace-pre-line text-text-primary leading-relaxed">{item.artist}</span>
+                  </div>
+                )}
                 {item.remark && (
                   <div className="flex">
                     <span className="w-16 text-text-secondary flex-shrink-0">备注</span>
@@ -324,8 +330,8 @@ const ItemModal = ({ item, onClose, onToggleStatus, onAddPriceRecord, onRemovePr
                   onClick={() => onToggleStatus(item.id, 'wish', selectedVersion)}
                   className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium text-white transition-all ${
                     selectedVersionStatus === 'wish'
-                      ? 'bg-rose-600 shadow-md ring-2 ring-rose-300'
-                      : 'bg-rose-400 hover:bg-rose-500'
+                      ? 'bg-accent-soft-hover shadow-md ring-2 ring-accent/30'
+                      : 'bg-accent-soft hover:bg-accent-soft-hover'
                   }`}
                 >
                   <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
@@ -484,9 +490,9 @@ const ItemModal = ({ item, onClose, onToggleStatus, onAddPriceRecord, onRemovePr
               )}
 
               {selectedVersionStatus === 'wish' && (
-                <div className="bg-rose-50/50 rounded-2xl p-4 mb-6 border border-rose-100">
-                  <p className="text-sm font-semibold text-rose-600 mb-1">心理价格范围</p>
-                  <p className="text-xs text-rose-400/70 mb-3 leading-relaxed">
+                <div className="bg-accent-soft/10 rounded-2xl p-4 mb-6 border border-accent-soft/40">
+                  <p className="text-sm font-semibold text-accent mb-1">心理价格范围</p>
+                  <p className="text-xs text-accent/60 mb-3 leading-relaxed">
                     设置你愿意接受的买入价格区间。只填最低价 = 心理单价；填区间 = 最低到最高均可接受。
                   </p>
                   <div className="space-y-3">
@@ -501,7 +507,7 @@ const ItemModal = ({ item, onClose, onToggleStatus, onAddPriceRecord, onRemovePr
                           value={item.wishPriceMin || ''}
                           onChange={(e) => onSetWishPriceMin(item.id, e.target.value)}
                           placeholder="0.00"
-                          className="flex-1 px-3 py-1.5 rounded-lg border border-rose-200 bg-white text-text-primary text-base focus:outline-none focus:ring-2 focus:ring-rose-400 focus:border-transparent font-quick"
+                          className="flex-1 px-3 py-1.5 rounded-lg border border-accent-soft/60 bg-white text-text-primary text-base focus:outline-none focus:ring-2 focus:ring-accent-soft focus:border-transparent font-quick"
                         />
                       </div>
                     </div>
@@ -516,7 +522,7 @@ const ItemModal = ({ item, onClose, onToggleStatus, onAddPriceRecord, onRemovePr
                           value={item.wishPriceMax || ''}
                           onChange={(e) => onSetWishPriceMax(item.id, e.target.value)}
                           placeholder="0.00"
-                          className="flex-1 px-3 py-1.5 rounded-lg border border-rose-200 bg-white text-text-primary text-base focus:outline-none focus:ring-2 focus:ring-rose-400 focus:border-transparent font-quick"
+                          className="flex-1 px-3 py-1.5 rounded-lg border border-accent-soft/60 bg-white text-text-primary text-base focus:outline-none focus:ring-2 focus:ring-accent-soft focus:border-transparent font-quick"
                         />
                       </div>
                     </div>
@@ -525,24 +531,24 @@ const ItemModal = ({ item, onClose, onToggleStatus, onAddPriceRecord, onRemovePr
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => onDecreaseWishQty(item.id)}
-                          className="w-7 h-7 flex items-center justify-center rounded-full bg-white text-rose-600 font-bold border border-rose-200 hover:bg-rose-100 transition-colors"
+                          className="w-7 h-7 flex items-center justify-center rounded-full bg-white text-accent font-bold border border-accent-soft/60 hover:bg-accent-soft/25 transition-colors"
                         >
                           −
                         </button>
-                        <span className="font-quick font-bold text-rose-600 min-w-[32px] text-center">
+                        <span className="font-quick font-bold text-accent min-w-[32px] text-center">
                           {item.wishQuantity || 1}
                         </span>
                         <button
                           onClick={() => onIncreaseWishQty(item.id)}
-                          className="w-7 h-7 flex items-center justify-center rounded-full bg-white text-rose-600 font-bold border border-rose-200 hover:bg-rose-100 transition-colors"
+                          className="w-7 h-7 flex items-center justify-center rounded-full bg-white text-accent font-bold border border-accent-soft/60 hover:bg-accent-soft/25 transition-colors"
                         >
                           +
                         </button>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3 pt-2 border-t border-rose-200/60">
+                    <div className="flex items-center gap-3 pt-2 border-t border-accent-soft/40">
                       <span className="text-sm text-text-secondary w-16 flex-shrink-0">总价</span>
-                      <span className="font-quick font-bold text-lg text-rose-600">
+                      <span className="font-quick font-bold text-lg text-accent">
                         ¥ {wishTotalMin.toFixed(2)}
                         {hasRange && <span className="text-base font-normal"> ~ ¥ {wishTotalMax.toFixed(2)}</span>}
                       </span>

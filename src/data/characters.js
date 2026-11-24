@@ -1,4 +1,4 @@
-export const SERIES_LIST = ['全部', "μ's", 'Aqours', '虹咲', 'Liella!', '莲之空', '其他'];
+export const SERIES_LIST = ['全部', "μ's", 'Aqours','Saint Snow', '虹咲', 'Liella!', '莲之空', '人生不易部', '其他'];
 // 合法系列名集合（不含"全部"），用于判断 character 里写的是系列名而非真实角色
 export const VALID_SERIES = new Set(SERIES_LIST.filter(s => s !== '全部'));
 // 系列下拉/展示用的友好文案（内部值保持不变，避免与商品数据里的 series 值不一致）
@@ -28,7 +28,9 @@ const CHARACTER_DATABASE = [
   { name: '国木田花丸', series: 'Aqours', romaji: 'Kunikida Hanamaru', pinyin: 'guomutianhuawan' },
   { name: '小原鞠莉', series: 'Aqours', romaji: 'Ohara Mari', pinyin: 'xiaoyuanjuli' },
   { name: '黑泽露比', series: 'Aqours', romaji: 'Kurosawa Ruby', pinyin: 'heizelubi' },
-
+ // Saint Snow（LoveLive! Sunshine!!）
+  { name: '鹿角圣良', series: 'Saint Snow', romaji: 'Kazuno Sarah', pinyin: 'lujiaoshengliang' },
+   { name: '鹿角理亚', series: 'Saint Snow', romaji: ' Kazuno Leah', pinyin: 'lujiaoliyao' },
   // 虹咲（LoveLive! 虹咲学园学园偶像同好会）
   { name: '上原步梦', series: '虹咲', romaji: 'Uehara Ayumu', pinyin: 'shangyuanbumeng' },
   { name: '中须霞', series: '虹咲', romaji: 'Nakasu Kasumi', pinyin: 'zhongxuxia' },
@@ -36,11 +38,13 @@ const CHARACTER_DATABASE = [
   { name: '朝香果林', series: '虹咲', romaji: 'Asaka Karin', pinyin: 'chaoxiangguolin' },
   { name: '宫下爱', series: '虹咲', romaji: 'Miyashita Ai', pinyin: 'gongxiaai' },
   { name: '近江彼方', series: '虹咲', romaji: 'Konoe Kanata', pinyin: 'jinjiangbifang' },
+  { name: '优木雪菜', series: '虹咲', romaji: 'Yuki Setsuna', pinyin: 'youmuxuecai' },
   { name: '艾玛·维尔德', series: '虹咲', romaji: 'Emma Verde', pinyin: 'aimaweierde' },
   { name: '天王寺璃奈', series: '虹咲', romaji: 'Tennoji Rina', pinyin: 'tianwangsilinai' },
   { name: '三船栞子', series: '虹咲', romaji: 'Mifune Shioriko', pinyin: 'sanchuankanzi' },
   { name: '米娅·泰勒', series: '虹咲', romaji: 'Mia Taylor', pinyin: 'miyataile' },
   { name: '钟岚珠', series: '虹咲', romaji: 'Zhong Lanzhu', pinyin: 'zhonglanzhu' },
+   { name: '高咲侑', series: '虹咲', romaji: 'Takasaki Yu', pinyin: 'gaoxiaoyou' },
 
   // Liella!（LoveLive! Superstar!!）
   { name: '涩谷香音', series: 'Liella!', romaji: 'Shibuya Kanon', pinyin: 'seiguxiangyin' },
@@ -62,10 +66,26 @@ const CHARACTER_DATABASE = [
   { name: '夕雾缀理', series: '莲之空', romaji: 'Yugiri Tsuzuri', pinyin: 'xiwuzhuili' },
   { name: '大泽瑠璃乃', series: '莲之空', romaji: 'Osawa Rurino', pinyin: 'dazeliulinai' },
   { name: '百生吟子', series: '莲之空', romaji: 'Momose Ginko', pinyin: 'baishengyinzi' },
-  { name: '徒町小铃', series: '莲之空', romaji: 'Kachimachi Koringo', pinyin: 'tutingxiaoling' },
+  { name: '徒町小铃', series: '莲之空', romaji: 'Kachimachi Kosuzu', pinyin: 'tutingxiaoling' },
   { name: '安养寺姬芽', series: '莲之空', romaji: 'Anyoji Hime', pinyin: 'anyangsijiya' },
-  { name: '赛拉斯·柳田', series: '莲之空', romaji: 'Seras Yanagita', pinyin: 'sailasiliutian' },
+  { name: '赛拉丝·柳田·利林费尔德', series: '莲之空', romaji: 'Ceras Yanagida Lilienfeld', pinyin: 'sailasiliutian' },
   { name: '大贺美沙知', series: '莲之空', romaji: 'Ogami Sachi', pinyin: 'dahemeishazhi' },
+  { name: '锦上莓果', series: '莲之空', romaji: 'Kinjo Maika', pinyin: 'jinshangmeiguo' },
+  { name: '令泽葵', series: '莲之空', romaji: 'Reisawa Aoi', pinyin: 'lingzekui' },
+  { name: '紫轮美音', series: '莲之空', romaji: 'Shinowa Mion', pinyin: 'zilunmeiyin' },
+  { name: '桂城泉', series: '莲之空', romaji: 'Katsuragi Izumi', pinyin: 'guichengquan' },
+
+  // 人生不易部（IKIZULIVE! LOVELIVE! BLUEBIRD）
+  { name: '高桥波尔卡', series: '人生不易部', romaji: 'Takahashi Polka', pinyin: 'gaoqiaoboerka' },
+  { name: '春宫悠可里', series: '人生不易部', romaji: 'Harumiya Yukuri', pinyin: 'chungongyoukeli' },
+  { name: '麻布麻衣', series: '人生不易部', romaji: 'Azabu Mai', pinyin: 'mabumayi' },
+  { name: '五桐玲', series: '人生不易部', romaji: 'Goto Akira', pinyin: 'wutongling' },
+  { name: '驹形花火', series: '人生不易部', romaji: 'Komagata Hanabi', pinyin: 'juxinghuahuo' },
+  { name: '金泽奇迹', series: '人生不易部', romaji: 'Kanazawa Miracle', pinyin: 'jinzeqiji' },
+  { name: '此花辉夜', series: '人生不易部', romaji: 'Konohana Aurora', pinyin: 'cihuahuiye' },
+  { name: '山田真绿', series: '人生不易部', romaji: 'Yamada Midori', pinyin: 'shantianzhenlv' },
+  { name: '佐佐木翔音', series: '人生不易部', romaji: 'Sasaki Shion', pinyin: 'zuozuomuxiangyin' },
+  { name: '调布乃理子', series: '人生不易部', romaji: 'Chofu Noriko', pinyin: 'tiaobunailizi' },
 
   // 其他（非偶像角色：家人等）
   { name: '高坂雪穗', series: '其他', romaji: 'Kousaka Yukiho', pinyin: 'gaobanxuesui' },

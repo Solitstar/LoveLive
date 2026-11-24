@@ -35,7 +35,7 @@ const MAX_CANVAS_AREA = IS_IOS ? 16700000 : 268000000;
 // 主题色
 const COLORS = {
   owned: { badge: '#eab308', badgeText: '#fff' },
-  wish:  { badge: '#f43f5e', badgeText: '#fff' },
+  wish:  { badge: '#EE78A8', badgeText: '#fff' },
 };
 
 // ---- 图片加载 ----

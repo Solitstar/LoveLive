@@ -7,6 +7,31 @@ import {
   CHARACTER_GROUPS,
   getCharacterGroupByName,
 } from '../data/characters';
+import { getCharacterImage, isPreCroppedAvatar } from '../data/characterImages';
+
+// 圆形角色头像：远程图加载失败时回落到首字占位
+// 「全部」「其他」不是真实角色，不显示占位圆形
+const CharacterAvatar = ({ name, sizeClass = 'w-6 h-6' }) => {
+  if (name === '全部' || name === '其他') return null;
+  const src = getCharacterImage(name);
+  const initial = name ? name.slice(0, 1) : '?';
+  return (
+    <span className={`relative ${sizeClass} flex-shrink-0 rounded-full overflow-hidden bg-accent/10`}>
+      <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-accent">
+        {initial}
+      </span>
+      {src && (
+        <img
+          src={src}
+          alt=""
+          loading="lazy"
+          className={`absolute inset-0 w-full h-full object-cover object-top ${isPreCroppedAvatar(src) ? '' : 'scale-[2.9] origin-top'}`}
+          onError={(e) => { e.currentTarget.style.display = 'none'; }}
+        />
+      )}
+    </span>
+  );
+};
 
 const selectClass = `
   appearance-none px-4 py-2.5 pr-10 rounded-xl
@@ -114,6 +139,74 @@ const SeriesSelect = ({ value, onChange }) => {
   );
 };
 
+// 角色下拉：带圆形头像
+const CharacterSelect = ({ value, options, onChange }) => {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDocMouseDown = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    };
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('mousedown', onDocMouseDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', onDocMouseDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [open]);
+
+  const pick = (v) => {
+    onChange(v);
+    setOpen(false);
+  };
+
+  return (
+    <div className={wrapperClass} ref={ref}>
+      <label className="block text-xs text-text-secondary mb-1.5 ml-1">角色</label>
+      <button
+        type="button"
+        onClick={() => setOpen(v => !v)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        className={selectClass + " w-full text-left relative"}
+      >
+        <span className="flex items-center gap-2 min-w-0">
+          <CharacterAvatar name={value} sizeClass="w-6 h-6" />
+          <span className="block truncate">{value}</span>
+        </span>
+        <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-accent text-sm">
+          ▾
+        </span>
+      </button>
+
+      {open && (
+        <div className="absolute z-30 left-0 mt-1 w-max min-w-full max-w-[240px] max-h-72 overflow-y-auto rounded-xl bg-card-bg border border-accent/20 shadow-soft py-1">
+          {options.map(opt => (
+            <button
+              key={opt}
+              type="button"
+              onClick={() => pick(opt)}
+              className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 transition-colors ${
+                opt === value
+                  ? 'bg-accent/10 text-accent font-medium'
+                  : 'text-text-primary hover:bg-accent/5'
+              }`}
+            >
+              <CharacterAvatar name={opt} sizeClass="w-8 h-8" />
+              <span className="truncate">{opt}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const FilterBar = ({
   filterSeries,
   filterChar,
@@ -156,7 +249,7 @@ const FilterBar = ({
       <div className="flex flex-col lg:flex-row gap-3 sm:gap-4 items-stretch lg:items-center">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 flex-1">
           <SeriesSelect value={filterSeries} onChange={onSeriesChange} />
-          {renderSelect('角色', filterChar, onCharChange, availableCharacters)}
+          <CharacterSelect value={filterChar} options={availableCharacters} onChange={onCharChange} />
           {renderSelect('种类', filterType, onTypeChange, TYPES)}
           {renderSelect('角色数', filterCharCount, onCharCountChange, CHAR_COUNT_OPTIONS)}
         </div>

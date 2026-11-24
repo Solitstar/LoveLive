@@ -22,6 +22,12 @@ function readBuildVersion() {
 export default defineConfig(({ command }) => ({
   plugins: [react()],
   base: command === 'build' ? '/LoveLive/' : '/',
+  server: {
+    watch: {
+      // 本地角色头像目录由用户手动放置图片，忽略监听避免 Windows 下写入时 EBUSY
+      ignored: ['**/src/assets/characters/**'],
+    },
+  },
   define: {
     __APP_VERSION__: JSON.stringify(readBuildVersion()),
   },
