@@ -74,7 +74,7 @@ const CHARACTER_DATABASE = [
   { name: '令泽葵', series: '莲之空', romaji: 'Reisawa Aoi', pinyin: 'lingzekui' },
   { name: '紫轮美音', series: '莲之空', romaji: 'Shinowa Mion', pinyin: 'zilunmeiyin' },
   { name: '桂城泉', series: '莲之空', romaji: 'Katsuragi Izumi', pinyin: 'guichengquan' },
-
+ { name: '藤岛慈', series: '莲之空', romaji: 'Fujishima Megumi', pinyin: 'tengdaoci' },
   // 人生不易部（IKIZULIVE! LOVELIVE! BLUEBIRD）
   { name: '高桥波尔卡', series: '人生不易部', romaji: 'Takahashi Polka', pinyin: 'gaoqiaoboerka' },
   { name: '春宫悠可里', series: '人生不易部', romaji: 'Harumiya Yukuri', pinyin: 'chungongyoukeli' },
