@@ -13,8 +13,8 @@ const GoodsCard = ({ item, onClick, priority = false }) => {
     if (item.status === 'owned') {
       const qty = item.quantity || 1;
       return (
-        <div className="absolute top-1.5 left-1.5 sm:top-3 sm:left-3 z-10">
-          <span className="w-7 h-7 sm:w-9 sm:h-9 rounded-full bg-yellow-400 text-white text-[11px] sm:text-sm font-bold shadow-md flex items-center justify-center tabular-nums">
+        <div className="absolute top-1 left-1 sm:top-3 sm:left-3 z-10">
+          <span className="w-6 h-6 sm:w-9 sm:h-9 rounded-full bg-yellow-400 text-white text-[10px] sm:text-sm font-bold shadow-md flex items-center justify-center tabular-nums">
             ×{qty}
           </span>
         </div>
@@ -22,9 +22,9 @@ const GoodsCard = ({ item, onClick, priority = false }) => {
     }
     if (item.status === 'wish') {
       return (
-        <div className="absolute top-1.5 left-1.5 sm:top-3 sm:left-3 z-10">
-          <span className="bg-accent-soft text-white text-[10px] sm:text-xs font-bold px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded-full shadow-md flex items-center gap-0.5 sm:gap-1">
-            <svg className="w-3 h-3 sm:w-3.5 sm:h-3.5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <div className="absolute top-1 left-1 sm:top-3 sm:left-3 z-10">
+          <span className="bg-accent-soft text-white text-[9px] sm:text-xs font-bold px-1 py-0.5 sm:px-2.5 sm:py-1 rounded-full shadow-md flex items-center gap-0.5 sm:gap-1">
+            <svg className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
             </svg>
             想要
@@ -89,10 +89,10 @@ const GoodsCard = ({ item, onClick, priority = false }) => {
     <div
       onClick={() => onClick(item)}
       className={`
-        group relative bg-card-bg rounded-2xl overflow-hidden shadow-card
+        group relative bg-card-bg rounded-xl sm:rounded-2xl overflow-hidden shadow-card
         cursor-pointer transition-all duration-300 ease-out
         hover:shadow-soft hover:-translate-y-1
-        content-visibility-auto contain-intrinsic-size-[auto_280px]
+        content-visibility-auto contain-intrinsic-size-[auto_260px]
         will-change-transform
         ${getCardBorder()}
       `}
@@ -100,7 +100,7 @@ const GoodsCard = ({ item, onClick, priority = false }) => {
       {getStatusBadge()}
 
       {/* 图片容器 - 使用 object-contain 完整展示图片 */}
-      <div className="relative aspect-square overflow-hidden bg-[#f4f5f7] rounded-t-2xl">
+      <div className="relative aspect-square overflow-hidden bg-[#f4f5f7] rounded-t-xl sm:rounded-t-2xl">
         {/* 骨架屏加载动画 */}
         {!imgLoaded && !imgError && (
           <div className="absolute inset-0 animate-pulse bg-gradient-to-b from-gray-200 via-gray-100 to-gray-200" />
@@ -118,30 +118,30 @@ const GoodsCard = ({ item, onClick, priority = false }) => {
             opacity: imgLoaded ? 1 : 0,
             transition: 'opacity 0.3s ease-in-out',
           }}
-          className="w-full h-full object-contain p-1.5 sm:p-2 transition-transform duration-500 group-hover:scale-105"
+          className="w-full h-full object-contain p-1 sm:p-2 transition-transform duration-500 group-hover:scale-105"
         />
 
         {/* 心愿单心理价角标：已填写时直接显示在卡片上 */}
         {wishPriceLabel && (
-          <div className="absolute bottom-1.5 right-1.5 sm:bottom-3 sm:right-3 z-10">
-            <span className="bg-accent-soft/95 text-white text-[10px] sm:text-xs font-bold px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded-full shadow-md whitespace-nowrap font-quick">
+          <div className="absolute bottom-1 right-1 sm:bottom-3 sm:right-3 z-10">
+            <span className="bg-accent-soft/95 text-white text-[9px] sm:text-xs font-bold px-1 py-0.5 sm:px-2.5 sm:py-1 rounded-full shadow-md whitespace-nowrap font-quick">
               {wishPriceLabel}
             </span>
           </div>
         )}
       </div>
 
-      <div className="p-2.5 sm:p-4">
+      <div className="p-2 sm:p-4">
         {item.subtitle && (
-          <p className="text-[10px] sm:text-xs text-text-secondary font-quick mb-0.5 truncate">
+          <p className="text-[9px] sm:text-xs text-text-secondary font-quick leading-none mb-0.5 truncate">
             {item.subtitle}
           </p>
         )}
-        <h3 className="font-medium text-text-primary text-xs sm:text-base mb-1.5 sm:mb-2 line-clamp-2 leading-tight">
+        <h3 className="font-medium text-text-primary text-[11px] sm:text-base mb-1 sm:mb-2 line-clamp-2 leading-tight">
           {displayName}
         </h3>
-        <div className="flex flex-wrap gap-1 sm:gap-1.5">
-          <span className="inline-block text-[10px] sm:text-xs px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-full bg-accent/15 text-accent font-medium truncate max-w-full">
+        <div className="flex flex-wrap gap-0.5 sm:gap-1.5">
+          <span className="inline-block text-[9px] sm:text-xs px-1 sm:px-2.5 py-0.5 sm:py-1 rounded-full bg-accent/15 text-accent font-medium truncate max-w-full">
             {formatCharacterDisplay(item.character, item.series, { forCardCompact: true })}
           </span>
           <span className="hidden sm:inline-block text-xs px-2.5 py-1 rounded-full bg-bg-primary text-text-secondary font-medium">
@@ -150,7 +150,7 @@ const GoodsCard = ({ item, onClick, priority = false }) => {
         </div>
       </div>
 
-      <div className="absolute inset-0 bg-accent/0 group-hover:bg-accent/5 transition-colors duration-300 pointer-events-none rounded-2xl" />
+      <div className="absolute inset-0 bg-accent/0 group-hover:bg-accent/5 transition-colors duration-300 pointer-events-none rounded-xl sm:rounded-2xl" />
     </div>
   );
 };
