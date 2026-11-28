@@ -7462,7 +7462,7 @@ id: 710,
     type: '徽章',
     size: 'Φ56mm',
     price: '[盲抽]770円(含税)',
-    image: 'https://i.imgur.com/AzOmSCW.png',
+    image: 'https://imgbed.heliar.top/i/SaT0fGeWmDPaBR_x_image.png',
   },
 {
 id: 711,
